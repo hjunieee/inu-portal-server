@@ -39,20 +39,26 @@ public class VllmClientService {
             // Nexacro 14 ERP 특화 지침 추가 (AI가 시스템 구조를 오해하지 않도록 보강)
             String nexacroSpecificPrompt = systemPrompt + "\n\n" +
                 "[IMPORTANT: ERP System Context]\n" +
-                "1. Framework: Nexacro 14 (Old version). Do NOT use nexacro.getApplication(). Use 'application' directly.\n" +
-                "2. Menu Structure: Hierarchical (Top -> Left -> Detail).\n" +
-                "3. To open a menu, you MUST check if the menu exists in 'application.gv_leftFrame.form.DS_MENU'.\n" +
-                "4. If not found (row == -1), you MUST first click the Top Menu category:\n" +
-                "   - Function: application.gv_topFrame.form.mb_topMenu_onmenuclick(application.gv_topFrame.form.mb_topMenu, {id: '" + topMenuId + "', userdata: '" + topMenuId + "'});\n" +
-                "   - Target Top Menu ID for this request is '" + topMenuId + "'.\n" +
-                "5. After clicking top menu, if the target menu is visible, use the application framework's open function or direct dataset manipulation.\n" +
-                "6. Example for Opening Target Menu:\n" +
-                "   if (application.gv_leftFrame.form.DS_MENU.findRow('menuId', TARGET_MENU_ID) === -1) {\n" +
-                "     application.gv_topFrame.form.mb_topMenu_onmenuclick(application.gv_topFrame.form.mb_topMenu, {id: '" + topMenuId + "', userdata: '" + topMenuId + "'});\n" +
-                "     return {statusMessage: '상위 메뉴를 열고 있습니다...', completed: false};\n" +
+                "1. Framework: Nexacro 14 (Old version). Use 'application' directly (NOT nexacro.getApplication()).\n" +
+                "2. Navigation Strategy:\n" +
+                "   A. Check if target menu exists in 'application.gv_leftFrame.form.DS_MENU' with menuGbn == 'P'.\n" +
+                "   B. If NOT found (row == -1), click the Top Menu category FIRST:\n" +
+                "      - application.gv_topFrame.form.mb_topMenu_onmenuclick(application.gv_topFrame.form.mb_topMenu, {id: '" + topMenuId + "', userdata: '" + topMenuId + "'});\n" +
+                "   C. Once target is in DS_MENU, find the row index where (menuId == 'TARGET_ID' && menuGbn == 'P').\n" +
+                "   D. Execute the click on the Left Grid using the exact event simulation below:\n" +
+                "      - var grid = application.gv_leftFrame.form.grd_leftMenu;\n" +
+                "      - application.gv_leftFrame.form.grd_leftMenu_oncellclick(grid, {row: row, cell: 0, clickitem: 'treeitem'});\n" +
+                "3. Example for Opening Timetable (M002861):\n" +
+                "   var ds = application.gv_leftFrame.form.DS_MENU;\n" +
+                "   var row = ds.findRow('menuId', 'M002861');\n" +
+                "   if (row === -1) {\n" +
+                "     application.gv_topFrame.form.mb_topMenu_onmenuclick(application.gv_topFrame.form.mb_topMenu, {id: 'M000758', userdata: 'M000758'});\n" +
+                "     return {statusMessage: '학사행정 메뉴를 열고 있습니다...', completed: false};\n" +
                 "   } else {\n" +
-                "     // Logic to open TARGET_MENU_ID\n" +
+                "     application.gv_leftFrame.form.grd_leftMenu_oncellclick(application.gv_leftFrame.form.grd_leftMenu, {row: row, cell: 0, clickitem: 'treeitem'});\n" +
+                "     return {statusMessage: '시간표 화면을 불러오고 있습니다...', completed: false};\n" +
                 "   }";
+
 
             // baseUrl의 끝에 /가 있는지 확인하고, uri 호출 시 상대경로를 사용하여 결합 오류 방지
             String normalizedBaseUrl = vllmUrl.endsWith("/") ? vllmUrl : vllmUrl + "/";
