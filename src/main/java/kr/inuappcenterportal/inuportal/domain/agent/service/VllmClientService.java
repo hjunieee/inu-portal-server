@@ -36,8 +36,11 @@ public class VllmClientService {
      */
     public String requestNextStep(String systemPrompt, String userMessage) {
         try {
+            // baseUrl의 끝에 /가 있는지 확인하고, uri 호출 시 상대경로를 사용하여 결합 오류 방지
+            String normalizedBaseUrl = vllmUrl.endsWith("/") ? vllmUrl : vllmUrl + "/";
+            
             WebClient webClient = WebClient.builder()
-                    .baseUrl(vllmUrl)
+                    .baseUrl(normalizedBaseUrl)
                     .defaultHeader("Authorization", "Bearer " + apiKey)
                     .build();
 
@@ -49,19 +52,19 @@ public class VllmClientService {
                             Map.of("role", "user", "content", userMessage)
                     ),
                     "temperature", 0.1,
-                    // JSON Mode 활성화 (Qwen 모델이 반드시 JSON 형식의 스크립트 규격을 뱉도록 한정)
                     "response_format", Map.of("type", "json_object")
             );
 
-            log.info("vLLM API 호출 전송 - 서버: {}, 모델: {}", vllmUrl, modelName);
+            log.info("vLLM API 호출 시도 - URL: {}chat/completions, Model: {}, API Key(prefix): {}...", 
+                    normalizedBaseUrl, modelName, apiKey.substring(0, Math.min(apiKey.length(), 5)));
 
             String rawResponse = webClient.post()
-                    .uri("/chat/completions")
+                    .uri("chat/completions")
                     .contentType(MediaType.APPLICATION_JSON)
                     .bodyValue(requestBody)
                     .retrieve()
                     .bodyToMono(String.class)
-                    .block(Duration.ofSeconds(30)); // 동기식 30초 대기 안전 제어
+                    .block(Duration.ofSeconds(30));
 
             if (rawResponse == null || rawResponse.isBlank()) {
                 throw new RuntimeException("vLLM 서버로부터 빈 응답을 수령했습니다.");
