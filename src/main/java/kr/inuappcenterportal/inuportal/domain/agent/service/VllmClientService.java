@@ -40,14 +40,12 @@ public class VllmClientService {
             String nexacroSpecificPrompt = systemPrompt + "\n\n" +
                 "[IMPORTANT: ERP System Context]\n" +
                 "1. Framework: Nexacro 14 (Old version). Use 'application' directly (NOT nexacro.getApplication()).\n" +
-                "2. Navigation Strategy:\n" +
+                "2. Navigation Strategy (STRICTLY ONE ACTION PER TURN):\n" +
                 "   A. Check if target menu exists in 'application.gv_leftFrame.form.DS_MENU' with menuGbn == 'P'.\n" +
-                "   B. If NOT found (row == -1), click the Top Menu category FIRST:\n" +
+                "   B. If NOT found (row == -1), click the Top Menu category FIRST and STOP (return immediately):\n" +
                 "      - application.gv_topFrame.form.mb_topMenu_onmenuclick(application.gv_topFrame.form.mb_topMenu, {id: '" + topMenuId + "', userdata: '" + topMenuId + "'});\n" +
-                "   C. Once target is in DS_MENU, find the row index where (menuId == 'TARGET_ID' && menuGbn == 'P').\n" +
-                "   D. Execute the click on the Left Grid using the exact event simulation below:\n" +
-                "      - var grid = application.gv_leftFrame.form.grd_leftMenu;\n" +
-                "      - application.gv_leftFrame.form.grd_leftMenu_oncellclick(grid, {row: row, cell: 0, clickitem: 'treeitem'});\n" +
+                "   C. If target IS found in DS_MENU, find the row index where (menuId == 'TARGET_ID' && menuGbn == 'P') and execute click:\n" +
+                "      - application.gv_leftFrame.form.grd_leftMenu_oncellclick(application.gv_leftFrame.form.grd_leftMenu, {row: row, cell: 0, clickitem: 'treeitem'});\n" +
                 "3. Example for Opening Timetable (M002861):\n" +
                 "   var ds = application.gv_leftFrame.form.DS_MENU;\n" +
                 "   var row = ds.findRow('menuId', 'M002861');\n" +
@@ -56,7 +54,7 @@ public class VllmClientService {
                 "     return {statusMessage: '학사행정 메뉴를 열고 있습니다...', completed: false};\n" +
                 "   } else {\n" +
                 "     application.gv_leftFrame.form.grd_leftMenu_oncellclick(application.gv_leftFrame.form.grd_leftMenu, {row: row, cell: 0, clickitem: 'treeitem'});\n" +
-                "     return {statusMessage: '시간표 화면을 불러오고 있습니다...', completed: false};\n" +
+                "     return {statusMessage: '학생별 시간표 화면을 불러오고 있습니다...', completed: false};\n" +
                 "   }";
 
 
