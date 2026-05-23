@@ -21,11 +21,14 @@ public class VllmClientService {
 
     private final ObjectMapper objectMapper;
 
-    @Value("${vllm.server.url:http://localhost:8000/v1}")
+    @Value("${vllm.server.url:https://ai-server.inuappcenter.kr/v1}")
     private String vllmUrl;
 
-    @Value("${vllm.api.key:local-h100-key}")
+    @Value("${vllm.api.key:it-innovation-lab-ai-rhddbtjqjzl-2026}")
     private String apiKey;
+
+    @Value("${vllm.model.name:Qwen/Qwen2.5-Coder-32B-Instruct-AWQ}")
+    private String modelName;
 
     /**
      * H100 vLLM 서버에 OpenAI Chat Completions 규격으로 비동기/동기 요청을 전달하여 
@@ -40,7 +43,7 @@ public class VllmClientService {
 
             // vLLM / OpenAI Chat Completions 요청 페이로드 세팅
             Map<String, Object> requestBody = Map.of(
-                    "model", "Qwen/Qwen2.5-Coder-32B-Instruct-AWQ",
+                    "model", modelName,
                     "messages", List.of(
                             Map.of("role", "system", "content", systemPrompt),
                             Map.of("role", "user", "content", userMessage)
@@ -50,7 +53,7 @@ public class VllmClientService {
                     "response_format", Map.of("type", "json_object")
             );
 
-            log.info("vLLM API 호출 전송 - 모델: Qwen2.5-Coder-32B-Instruct-AWQ");
+            log.info("vLLM API 호출 전송 - 서버: {}, 모델: {}", vllmUrl, modelName);
 
             String rawResponse = webClient.post()
                     .uri("/chat/completions")
