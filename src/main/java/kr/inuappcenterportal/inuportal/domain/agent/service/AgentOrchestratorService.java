@@ -27,25 +27,25 @@ public class AgentOrchestratorService {
     public AgentDto.StartResponse initiateTask(String userPrompt) {
         log.info("에이전트 태스크 개시 요청 수령: {}", userPrompt);
 
-        // 1. 핵심 키워드 매칭을 통한 RAG 메뉴 맵 탐색
+        // 1. 핵심 키워드 매칭을 통한 RAG 메뉴 맵 탐색 (프로그램 'P'만 검색하여 폴더 중복 방지)
         List<PortalMenuMap> matchedMenus = new ArrayList<>();
         String[] coreKeywords = {"성적", "장학", "등록금", "납부", "학적", "신상", "시간표", "강의"};
         
         for (String keyword : coreKeywords) {
             if (userPrompt.contains(keyword)) {
-                matchedMenus.addAll(menuMapRepository.searchByKeyword(keyword));
+                matchedMenus.addAll(menuMapRepository.searchProgramsByKeyword(keyword));
             }
         }
 
         // 키워드 분절 매칭 실패 시 전체 문장으로 매치 시도
         if (matchedMenus.isEmpty()) {
-            matchedMenus = menuMapRepository.searchByKeyword(userPrompt);
+            matchedMenus = menuMapRepository.searchProgramsByKeyword(userPrompt);
         }
 
         // 2. 검색 매칭 결과 분석 및 첫 응답 조립
         if (!matchedMenus.isEmpty()) {
             PortalMenuMap targetMenu = matchedMenus.get(0);
-            log.info("RAG 메뉴 매칭 성공: {} (ID: {})", targetMenu.getMenuNm(), targetMenu.getMenuId());
+            log.info("RAG 메뉴 매칭 성공 (프로그램 전용): {} (ID: {})", targetMenu.getMenuNm(), targetMenu.getMenuId());
 
             // 넥사크로 14 전용 메뉴 강제 이동 스크립트 빌드 (Track A)
             String initJs = String.format("if (window.nexacro && nexacro.getApplication()) { nexacro.getApplication().gfn_openMenu('%s'); }", targetMenu.getMenuId());
@@ -154,7 +154,7 @@ public class AgentOrchestratorService {
         );
 
         // 2. H100 vLLM 추론 서비스 호출
-        String inferenceResult = vllmClientService.requestNextStep(systemPrompt, userMessage, topMenuId);
+        String inferenceResult = vllmClientService.requestNextStep(systemPrompt, userMessage, topMenuId, request);
 
         try {
             // 3. 수령한 추론 JSON 결과를 역직렬화하여 반환 DTO로 가공

@@ -34,7 +34,7 @@ public class VllmClientService {
      * H100 vLLM 서버에 OpenAI Chat Completions 규격으로 비동기/동기 요청을 전달하여 
      * 다음 에이전트 조작 단계의 자바스크립트 코드와 상태 메시지를 추론해 냅니다.
      */
-    public String requestNextStep(String systemPrompt, String userMessage, String topMenuId) {
+    public String requestNextStep(String systemPrompt, String userMessage, String topMenuId, kr.inuappcenterportal.inuportal.domain.agent.dto.AgentDto.StepRequest request) {
         try {
             // Nexacro 14 ERP 특화 지침 추가 (AI가 시스템 구조를 오해하지 않도록 보강)
             String nexacroSpecificPrompt = systemPrompt + "\n\n" +
@@ -50,16 +50,25 @@ public class VllmClientService {
                 "   [Recursive Logic Pattern]\n" +
                 "   ```javascript\n" +
                 "   var ds = application.gv_leftFrame.form.DS_MENU;\n" +
-                "   // 1. If Top Menu category is not loaded, click it.\n" +
+                "   var targetId = '" + request.getMenuId() + "';\n" +
+                "   \n" +
                 "   if (!ds || ds.findRow('menuId', 'NEXT_LEVEL_ID_IN_PATH') === -1) {\n" +
                 "       application.gv_topFrame.form.mb_topMenu_onmenuclick(application.gv_topFrame.form.mb_topMenu, {id: 'TOP_ID', userdata: 'TOP_ID'});\n" +
                 "   } else {\n" +
-                "       // 2. Click the next depth in the path (could be a folder or the final program)\n" +
-                "       var row = ds.findRow('menuId', 'TARGET_OR_SUBFOLDER_ID');\n" +
-                "       application.gv_leftFrame.form.grd_leftMenu_oncellclick(application.gv_leftFrame.form.grd_leftMenu, {row: row, cell: 0, clickitem: 'treeitem'});\n" +
+                "       var row = ds.findRow('menuId', targetId);\n" +
+                "       if (row !== -1 && ds.getColumn(row, 'menuGbn') === 'P') {\n" +
+                "           // FINAL ACTION: Target program found. Click it and signal transition.\n" +
+                "           application.gv_leftFrame.form.grd_leftMenu_oncellclick(application.gv_leftFrame.form.grd_leftMenu, {row: row, cell: 0, clickitem: 'treeitem'});\n" +
+                "       }\n" +
                 "   }\n" +
                 "   ```\n" +
-                "3. Output Constraint: Always provide a full, state-aware JS block. Never return completed: true until the target program screen is visible.";
+                "3. Completion Trigger:\n" +
+                "   - If your previous 'jsCode' was a click on a Program ('P'), you MUST transition to direct scraping in the NEXT turn:\n" +
+                "     {\n" +
+                "       \"jsCode\": \"DIRECT_SSV_CRAWL\",\n" +
+                "       \"statusMessage\": \"넥사크로 세션 연동 완료! 데이터를 추출합니다.\",\n" +
+                "       \"completed\": true\n" +
+                "     }";
 
 
             // baseUrl의 끝에 /가 있는지 확인하고, uri 호출 시 상대경로를 사용하여 결합 오류 방지
