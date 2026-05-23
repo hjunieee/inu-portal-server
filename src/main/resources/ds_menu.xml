@@ -1,0 +1,68 @@
+<Dataset id="DS_MENU">
+	<ColumnInfo>
+		<Column id="pgmId" type="UNDEFINED" size="0"  />
+		<Column id="userDataVal1" type="UNDEFINED" size="0"  />
+		<Column id="userDataVal2" type="UNDEFINED" size="0"  />
+		<Column id="userDataVal3" type="UNDEFINED" size="0"  />
+		<Column id="menuId" type="STRING" size="32"  />
+		<Column id="upMenuId" type="STRING" size="32"  />
+		<Column id="menuGbn" type="STRING" size="32"  />
+		<Column id="level" type="BIGDECIMAL" size="16"  />
+		<Column id="menuNm" type="STRING" size="32"  />
+		<Column id="dispOrd" type="BIGDECIMAL" size="16"  />
+		<Column id="pgmPath" type="UNDEFINED" size="0"  />
+		<Column id="pgmFileNm" type="UNDEFINED" size="0"  />
+		<Column id="leftMenuNm" type="STRING" size="32"  />
+		<Column id="menuLvl" type="BIGDECIMAL" size="16"  />
+	</ColumnInfo>
+	<Rows>
+		<Row>
+			<Col id="pgmId" />
+			<Col id="userDataVal1" />
+			<Col id="userDataVal2" />
+			<Col id="userDataVal3" />
+			<Col id="menuId">M001033</Col>
+			<Col id="upMenuId">M001032</Col>
+			<Col id="menuGbn">M</Col>
+			<Col id="level">2</Col>
+			<Col id="menuNm">학적기본관리</Col>
+			<Col id="dispOrd">20</Col>
+			<Col id="pgmPath" />
+			<Col id="pgmFileNm" />
+			<Col id="leftMenuNm">학적기본관리</Col>
+			<Col id="menuLvl">3</Col>
+		</Row>
+		<Row>
+			<Col id="pgmId">P001878</Col>
+			<Col id="userDataVal1" />
+			<Col id="userDataVal2" />
+			<Col id="userDataVal3" />
+			<Col id="menuId">M002043</Col>
+			<Col id="upMenuId">M001033</Col>
+			<Col id="menuGbn">P</Col>
+			<Col id="level">3</Col>
+			<Col id="menuNm">개인학적조회(학생)</Col>
+			<Col id="dispOrd">35</Col>
+			<Col id="pgmPath">uni/sreg/tsim</Col>
+			<Col id="pgmFileNm">tsim0350</Col>
+			<Col id="leftMenuNm">- 개인학적조회(학생)</Col>
+			<Col id="menuLvl">4</Col>
+		</Row>
+		<Row>
+			<Col id="pgmId">P000925</Col>
+			<Col id="userDataVal1" />
+			<Col id="userDataVal2" />
+			<Col id="userDataVal3" />
+			<Col id="menuId">M001113</Col>
+			<Col id="upMenuId">M001033</Col>
+			<Col id="menuGbn">P</Col>
+			<Col id="level">3</Col>
+			<Col id="menuNm">학적부변경신청</Col>
+			<Col id="dispOrd">40</Col>
+			<Col id="pgmPath">uni/sreg/tsim</Col>
+			<Col id="pgmFileNm">tsim0400</Col>
+			<Col id="leftMenuNm">- 학적부변경신청</Col>
+			<Col id="menuLvl">4</Col>
+		</Row>
+	</Rows>
+</Dataset>

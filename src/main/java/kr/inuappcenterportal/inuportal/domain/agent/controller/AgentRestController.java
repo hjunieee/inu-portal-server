@@ -5,6 +5,7 @@ import kr.inuappcenterportal.inuportal.domain.agent.service.AgentOrchestratorSer
 import kr.inuappcenterportal.inuportal.domain.agent.service.PortalMenuSyncService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -45,17 +46,16 @@ public class AgentRestController {
     }
 
     /**
-     * 개발자 도구 콘솔에서 추출한 DS_MENU XML 데이터를 수령하여 
+     * 넥사크로에서 콘솔 카피로 추출한 DS_MENU XML 데이터를 수령하여
      * 실시간으로 MySQL 데이터베이스에 적재/동기화합니다.
-     * (사용 방법: POST /api/v1/agent/sync-menu  Body: {"xmlData": "<Dataset id='DS_MENU'>...</Dataset>"})
+     * (Content-Type: text/plain 으로 XML 원문을 그대로 body에 넣으면 됩니다)
      */
-    @PostMapping("/sync-menu")
-    public ResponseEntity<Map<String, Object>> synchronizeMenuXml(@RequestBody Map<String, String> requestBody) {
-        String xmlData = requestBody.get("xmlData");
+    @PostMapping(value = "/sync-menu", consumes = MediaType.TEXT_PLAIN_VALUE)
+    public ResponseEntity<Map<String, Object>> synchronizeMenuXml(@RequestBody String xmlData) {
         log.info("API 수신 - 포털 메뉴 XML 동기화 요청");
-        
+
         int syncedCount = menuSyncService.syncMenuXml(xmlData);
-        
+
         return ResponseEntity.ok(Map.of(
                 "success", true,
                 "syncedCount", syncedCount,
