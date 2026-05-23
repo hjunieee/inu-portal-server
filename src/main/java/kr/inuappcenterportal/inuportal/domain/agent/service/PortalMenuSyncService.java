@@ -62,12 +62,24 @@ public class PortalMenuSyncService {
                 String menuId = findColumnValue(row, "menuId");
                 String pgmId = findColumnValue(row, "pgmId");
                 String menuNm = findColumnValue(row, "menuNm");
+                String menuGbn = findColumnValue(row, "menuGbn");
+                String upMenuId = findColumnValue(row, "upMenuId");
+                String menuLvlStr = findColumnValue(row, "menuLvl");
                 String pgmPath = findColumnValue(row, "pgmPath");
                 String pgmFileNm = findColumnValue(row, "pgmFileNm");
 
-                // 필수 식별자가 누락되었거나 프로그램 연결이 없는 단순 폴더 노드(P가 아닌 경우)는 필터링
-                if (menuId == null || pgmId == null || menuNm == null) {
+                // 필수 식별자가 누락된 경우만 스킵 (pgmId는 폴더의 경우 null일 수 있음)
+                if (menuId == null || menuNm == null) {
                     continue;
+                }
+
+                Integer menuLvl = null;
+                if (menuLvlStr != null) {
+                    try {
+                        menuLvl = Integer.parseInt(menuLvlStr);
+                    } catch (NumberFormatException e) {
+                        log.debug("menuLvl 파싱 실패: {}", menuLvlStr);
+                    }
                 }
 
                 // 한글 메뉴명을 기준으로 검색 최적화용 키워드 프리셋 매핑
@@ -76,7 +88,7 @@ public class PortalMenuSyncService {
                 Optional<PortalMenuMap> existingMapOpt = repository.findByMenuId(menuId);
                 if (existingMapOpt.isPresent()) {
                     PortalMenuMap existingMap = existingMapOpt.get();
-                    // 기존 레코드가 있으면 키워드 갱신
+                    // 기존 레코드가 있으면 키워드 및 계층 정보 갱신 (추후 필요시 확장)
                     existingMap.updateKeywords(intentKeywords);
                     updatedCount++;
                 } else {
@@ -85,6 +97,9 @@ public class PortalMenuSyncService {
                             .menuId(menuId)
                             .pgmId(pgmId)
                             .menuNm(menuNm)
+                            .menuGbn(menuGbn)
+                            .upMenuId(upMenuId)
+                            .menuLvl(menuLvl)
                             .pgmPath(pgmPath)
                             .pgmFileNm(pgmFileNm)
                             .intentKeywords(intentKeywords)

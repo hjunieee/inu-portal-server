@@ -24,7 +24,7 @@ public class VllmClientService {
     @Value("${vllm.server.url:https://ai-server.inuappcenter.kr/v1}")
     private String vllmUrl;
 
-    @Value("${vllm.api.key:it-innovation-lab-ai-rhddbtjqjzl-2026}")
+    @Value("${vllm.api.key}")
     private String apiKey;
 
     @Value("${vllm.model.name:Qwen/Qwen2.5-Coder-32B-Instruct-AWQ}")
@@ -34,8 +34,26 @@ public class VllmClientService {
      * H100 vLLM 서버에 OpenAI Chat Completions 규격으로 비동기/동기 요청을 전달하여 
      * 다음 에이전트 조작 단계의 자바스크립트 코드와 상태 메시지를 추론해 냅니다.
      */
-    public String requestNextStep(String systemPrompt, String userMessage) {
+    public String requestNextStep(String systemPrompt, String userMessage, String topMenuId) {
         try {
+            // Nexacro 14 ERP 특화 지침 추가 (AI가 시스템 구조를 오해하지 않도록 보강)
+            String nexacroSpecificPrompt = systemPrompt + "\n\n" +
+                "[IMPORTANT: ERP System Context]\n" +
+                "1. Framework: Nexacro 14 (Old version). Do NOT use nexacro.getApplication(). Use 'application' directly.\n" +
+                "2. Menu Structure: Hierarchical (Top -> Left -> Detail).\n" +
+                "3. To open a menu, you MUST check if the menu exists in 'application.gv_leftFrame.form.DS_MENU'.\n" +
+                "4. If not found (row == -1), you MUST first click the Top Menu category:\n" +
+                "   - Function: application.gv_topFrame.form.mb_topMenu_onmenuclick(application.gv_topFrame.form.mb_topMenu, {id: '" + topMenuId + "', userdata: '" + topMenuId + "'});\n" +
+                "   - Target Top Menu ID for this request is '" + topMenuId + "'.\n" +
+                "5. After clicking top menu, if the target menu is visible, use the application framework's open function or direct dataset manipulation.\n" +
+                "6. Example for Opening Target Menu:\n" +
+                "   if (application.gv_leftFrame.form.DS_MENU.findRow('menuId', TARGET_MENU_ID) === -1) {\n" +
+                "     application.gv_topFrame.form.mb_topMenu_onmenuclick(application.gv_topFrame.form.mb_topMenu, {id: '" + topMenuId + "', userdata: '" + topMenuId + "'});\n" +
+                "     return {statusMessage: '상위 메뉴를 열고 있습니다...', completed: false};\n" +
+                "   } else {\n" +
+                "     // Logic to open TARGET_MENU_ID\n" +
+                "   }";
+
             // baseUrl의 끝에 /가 있는지 확인하고, uri 호출 시 상대경로를 사용하여 결합 오류 방지
             String normalizedBaseUrl = vllmUrl.endsWith("/") ? vllmUrl : vllmUrl + "/";
             
@@ -48,7 +66,7 @@ public class VllmClientService {
             Map<String, Object> requestBody = Map.of(
                     "model", modelName,
                     "messages", List.of(
-                            Map.of("role", "system", "content", systemPrompt),
+                            Map.of("role", "system", "content", nexacroSpecificPrompt),
                             Map.of("role", "user", "content", userMessage)
                     ),
                     "temperature", 0.1,

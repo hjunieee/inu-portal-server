@@ -74,6 +74,21 @@ public class AgentOrchestratorService {
     public AgentDto.StepResponse evaluateNextStep(AgentDto.StepRequest request) {
         log.info("에이전트 자율 조작 스텝 평가 요청 수령 - URL: {}", request.getCurrentUrl());
 
+        // 타겟 메뉴의 계층 구조를 DB에서 역추적하여 최상위 대분류(Top Menu) ID를 찾습니다.
+        String topMenuId = "M000758"; // Fallback default (학사행정)
+        try {
+            PortalMenuMap currentMenu = menuMapRepository.findByMenuId(request.getMenuId()).orElse(null);
+            while (currentMenu != null && currentMenu.getUpMenuId() != null && !currentMenu.getUpMenuId().equals("M") && currentMenu.getMenuLvl() != null && currentMenu.getMenuLvl() > 0) {
+                currentMenu = menuMapRepository.findByMenuId(currentMenu.getUpMenuId()).orElse(null);
+            }
+            if (currentMenu != null && currentMenu.getMenuId() != null) {
+                topMenuId = currentMenu.getMenuId();
+                log.info("동적 상위 메뉴(Top Menu) 탐색 완료: {} (ID: {})", currentMenu.getMenuNm(), topMenuId);
+            }
+        } catch (Exception e) {
+            log.warn("계층 구조 역추적 실패, 기본값(학사행정) 사용. 사유: {}", e.getMessage());
+        }
+
         // 1. Qwen 2.5 Coder용 정교한 넥사크로 전문 시스템 프롬프트 엔지니어링 수행
         String systemPrompt = """
                 You are the intelligent central brain of a web automation agent operating the Incheon National University Portal (built on the TOBESOFT Nexacro 14 platform).
@@ -83,6 +98,7 @@ public class AgentOrchestratorService {
                 - Target Page Name: %s
                 - Target Menu ID: %s
                 - Target Program ID: %s
+                - Target Top-Level Menu ID: %s
                 - Current Browser URL: %s
                 
                 [Nexacro 14 Operational Guidelines]
@@ -109,6 +125,7 @@ public class AgentOrchestratorService {
                         request.getMenuId(), // menuNm 대용으로 menuId 사용 가능
                         request.getMenuId(),
                         request.getPgmId(),
+                        topMenuId,
                         request.getCurrentUrl(),
                         request.getMenuId()
                 );
@@ -122,7 +139,7 @@ public class AgentOrchestratorService {
         );
 
         // 2. H100 vLLM 추론 서비스 호출
-        String inferenceResult = vllmClientService.requestNextStep(systemPrompt, userMessage);
+        String inferenceResult = vllmClientService.requestNextStep(systemPrompt, userMessage, topMenuId);
 
         try {
             // 3. 수령한 추론 JSON 결과를 역직렬화하여 반환 DTO로 가공
