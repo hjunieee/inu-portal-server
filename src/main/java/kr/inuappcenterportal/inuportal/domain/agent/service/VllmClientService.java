@@ -40,22 +40,26 @@ public class VllmClientService {
             String nexacroSpecificPrompt = systemPrompt + "\n\n" +
                 "[IMPORTANT: ERP System Context]\n" +
                 "1. Framework: Nexacro 14 (Old version). Use 'application' directly (NOT nexacro.getApplication()).\n" +
-                "2. Navigation Strategy (STRICTLY ONE ACTION PER TURN):\n" +
-                "   A. Check if target menu exists in 'application.gv_leftFrame.form.DS_MENU' with menuGbn == 'P'.\n" +
-                "   B. If NOT found (row == -1), click the Top Menu category FIRST and STOP (return immediately):\n" +
-                "      - application.gv_topFrame.form.mb_topMenu_onmenuclick(application.gv_topFrame.form.mb_topMenu, {id: '" + topMenuId + "', userdata: '" + topMenuId + "'});\n" +
-                "   C. If target IS found in DS_MENU, find the row index where (menuId == 'TARGET_ID' && menuGbn == 'P') and execute click:\n" +
-                "      - application.gv_leftFrame.form.grd_leftMenu_oncellclick(application.gv_leftFrame.form.grd_leftMenu, {row: row, cell: 0, clickitem: 'treeitem'});\n" +
-                "3. Example for Opening Timetable (M002861):\n" +
+                "2. Multi-Depth Navigation Strategy:\n" +
+                "   Follow the provided [Target Navigation Path] sequentially. For each step in the path:\n" +
+                "   A. If it is the TOP LEVEL (Level 0), use: application.gv_topFrame.form.mb_topMenu_onmenuclick(application.gv_topFrame.form.mb_topMenu, {id: 'ID', userdata: 'ID'});\n" +
+                "   B. If it is a SUB-MENU (Level 1+), locate it in 'application.gv_leftFrame.form.DS_MENU' and use: application.gv_leftFrame.form.grd_leftMenu_oncellclick(application.gv_leftFrame.form.grd_leftMenu, {row: row, cell: 0, clickitem: 'treeitem'});\n" +
+                "   \n" +
+                "   Your 'jsCode' MUST ALWAYS check the current loaded menus and click the first item in the path that is NOT yet active or visible.\n" +
+                "   \n" +
+                "   [Recursive Logic Pattern]\n" +
+                "   ```javascript\n" +
                 "   var ds = application.gv_leftFrame.form.DS_MENU;\n" +
-                "   var row = ds.findRow('menuId', 'M002861');\n" +
-                "   if (row === -1) {\n" +
-                "     application.gv_topFrame.form.mb_topMenu_onmenuclick(application.gv_topFrame.form.mb_topMenu, {id: 'M000758', userdata: 'M000758'});\n" +
-                "     return {statusMessage: '학사행정 메뉴를 열고 있습니다...', completed: false};\n" +
+                "   // 1. If Top Menu category is not loaded, click it.\n" +
+                "   if (!ds || ds.findRow('menuId', 'NEXT_LEVEL_ID_IN_PATH') === -1) {\n" +
+                "       application.gv_topFrame.form.mb_topMenu_onmenuclick(application.gv_topFrame.form.mb_topMenu, {id: 'TOP_ID', userdata: 'TOP_ID'});\n" +
                 "   } else {\n" +
-                "     application.gv_leftFrame.form.grd_leftMenu_oncellclick(application.gv_leftFrame.form.grd_leftMenu, {row: row, cell: 0, clickitem: 'treeitem'});\n" +
-                "     return {statusMessage: '학생별 시간표 화면을 불러오고 있습니다...', completed: false};\n" +
-                "   }";
+                "       // 2. Click the next depth in the path (could be a folder or the final program)\n" +
+                "       var row = ds.findRow('menuId', 'TARGET_OR_SUBFOLDER_ID');\n" +
+                "       application.gv_leftFrame.form.grd_leftMenu_oncellclick(application.gv_leftFrame.form.grd_leftMenu, {row: row, cell: 0, clickitem: 'treeitem'});\n" +
+                "   }\n" +
+                "   ```\n" +
+                "3. Output Constraint: Always provide a full, state-aware JS block. Never return completed: true until the target program screen is visible.";
 
 
             // baseUrl의 끝에 /가 있는지 확인하고, uri 호출 시 상대경로를 사용하여 결합 오류 방지

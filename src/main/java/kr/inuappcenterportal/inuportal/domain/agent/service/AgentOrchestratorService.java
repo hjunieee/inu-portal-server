@@ -74,25 +74,39 @@ public class AgentOrchestratorService {
     public AgentDto.StepResponse evaluateNextStep(AgentDto.StepRequest request) {
         log.info("에이전트 자율 조작 스텝 평가 요청 수령 - URL: {}", request.getCurrentUrl());
 
-        // 타겟 메뉴의 계층 구조를 DB에서 역추적하여 최상위 대분류(Top Menu) ID를 찾습니다.
-        String topMenuId = "M000758"; // Fallback default (학사행정)
+        // 타겟 메뉴부터 최상위 부모까지의 전체 경로(Path)를 역추적합니다.
+        List<PortalMenuMap> menuPath = new ArrayList<>();
+        String topMenuId = "M000758";
         try {
             PortalMenuMap currentMenu = menuMapRepository.findByMenuId(request.getMenuId()).orElse(null);
-            while (currentMenu != null && currentMenu.getUpMenuId() != null && !currentMenu.getUpMenuId().equals("M") && currentMenu.getMenuLvl() != null && currentMenu.getMenuLvl() > 0) {
+            while (currentMenu != null) {
+                menuPath.add(0, currentMenu); // 리스트의 앞에 추가하여 순서대로 정렬
+                if (currentMenu.getUpMenuId() == null || currentMenu.getUpMenuId().equals("M") || (currentMenu.getMenuLvl() != null && currentMenu.getMenuLvl() == 0)) {
+                    topMenuId = currentMenu.getMenuId();
+                    break;
+                }
                 currentMenu = menuMapRepository.findByMenuId(currentMenu.getUpMenuId()).orElse(null);
             }
-            if (currentMenu != null && currentMenu.getMenuId() != null) {
-                topMenuId = currentMenu.getMenuId();
-                log.info("동적 상위 메뉴(Top Menu) 탐색 완료: {} (ID: {})", currentMenu.getMenuNm(), topMenuId);
-            }
         } catch (Exception e) {
-            log.warn("계층 구조 역추적 실패, 기본값(학사행정) 사용. 사유: {}", e.getMessage());
+            log.warn("메뉴 경로 역추적 실패: {}", e.getMessage());
         }
+
+        // 경로 정보를 문자열로 요약하여 AI에게 전달
+        StringBuilder pathSummary = new StringBuilder();
+        for (int i = 0; i < menuPath.size(); i++) {
+            PortalMenuMap m = menuPath.get(i);
+            pathSummary.append(String.format("[%d] %s (%s)", i, m.getMenuNm(), m.getMenuId()));
+            if (i < menuPath.size() - 1) pathSummary.append(" -> ");
+        }
+        log.info("탐색된 내비게이션 경로: {}", pathSummary);
 
         // 1. Qwen 2.5 Coder용 정교한 넥사크로 전문 시스템 프롬프트 엔지니어링 수행
         String systemPrompt = """
                 You are the intelligent central brain of a web automation agent operating the Incheon National University Portal (built on the TOBESOFT Nexacro 14 platform).
                 Your ultimate goal is to fulfill the user's request.
+                
+                [Target Navigation Path]
+                %s
                 
                 [Context Info]
                 - Target Page Name: %s
@@ -122,7 +136,8 @@ public class AgentOrchestratorService {
                   "completed": boolean (true if the task is done or direct scraping is triggered)
                 }
                 """.formatted(
-                        request.getMenuId(), // menuNm 대용으로 menuId 사용 가능
+                        pathSummary.toString(),
+                        request.getMenuId(), 
                         request.getMenuId(),
                         request.getPgmId(),
                         topMenuId,
