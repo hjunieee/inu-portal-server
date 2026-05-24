@@ -36,6 +36,7 @@ public class AgentDto {
         private String currentUrl;
         private String htmlContent;
         private String lastAlertMessage;
+        private String base64Image; // 추가: 실시간 안드로이드 스크린샷 캡처
     }
 
     @Getter
@@ -46,5 +47,13 @@ public class AgentDto {
         private String jsCode;
         private String statusMessage;
         private boolean completed;
+
+        // 추가: 비전 기반 터치/드래그 액션용 좌표 필드
+        private String action;      // "CLICK", "DRAG", "TYPE", "NONE" 등
+        private Integer x;          // 정규화 좌표 x (0 ~ 1000)
+        private Integer y;          // 정규화 좌표 y (0 ~ 1000)
+        private Integer endX;       // 드래그 시 끝 x 좌표 (0 ~ 1000)
+        private Integer endY;       // 드래그 시 끝 y 좌표 (0 ~ 1000)
+        private String inputText;   // 텍스트 입력 시 기입할 글자
     }
 }

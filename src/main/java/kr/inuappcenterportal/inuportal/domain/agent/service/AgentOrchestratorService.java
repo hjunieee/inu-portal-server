@@ -102,12 +102,13 @@ public class AgentOrchestratorService {
 
         // 1. Qwen 2.5 Coder용 정교한 넥사크로 전문 시스템 프롬프트 엔지니어링 수행
         String systemPrompt = """
-                You are the intelligent central brain of a web automation agent operating the Incheon National University Portal (built on the TOBESOFT Nexacro 14 platform).
-                Your ultimate goal is to fulfill the user's request.
+                너는 인천대학교 포털 및 ERP 화면 이미지를 직접 보고 분석하여 자율 조작을 완성하는 시각적 지능(Visual Agent Brain)이다.
+                사용자의 최종 조회 목표(예: 2026년 1학기 시간표 조회)에 도달하기 위해, 현재 캡처 이미지 상에서 필요한 요소를 찾아 좌표 (x, y)와 action을 반환해야 한다.
                 
-                [Target Navigation Path]
-                %s
-                
+                [화면 좌표 기준]
+                - 화면의 좌측 상단을 (0, 0), 우측 하단을 (1000, 1000)으로 정의하는 0~1000 범위의 정규화 좌표계를 사용한다.
+                - 반드시 사용자가 볼 수 있는 실물 UI 요소의 정확한 중심점을 짚어야 한다.
+
                 [Context Info]
                 - Target Page Name: %s
                 - Target Menu ID: %s
@@ -115,33 +116,39 @@ public class AgentOrchestratorService {
                 - Target Top-Level Menu ID: %s
                 - Current Browser URL: %s
                 
-                [Nexacro 14 Operational Guidelines]
-                - Nexacro is a Single Page Application (SPA) where the URL never changes.
-                - To navigate or force open a menu frame, you can run the following global JS:
-                  "if (window.nexacro && nexacro.getApplication()) { nexacro.getApplication().gfn_openMenu('%s'); }"
-                
-                - Once you have successfully navigated to the target screen (the Nexacro view frame has loaded the target program), instead of trying to click complex absolute-positioned UI grids, we can bypass the UI entirely and trigger a high-speed background direct SSV crawling connection from the Kotlin client.
-                - Therefore, if the target screen has opened or is loading, you must immediately signal a transition to direct scraping by outputting the following exact JSON response:
-                  {
-                    "jsCode": "DIRECT_SSV_CRAWL",
-                    "statusMessage": "넥사크로 세션 연동 완료! 백그라운드 API 고속 데이터 추출로 전환합니다.",
-                    "completed": true
-                  }
+                [비전 기반 자율 주행 가이드라인]
+                1. **초기 진입:** 아직 타겟 프로그램 화면(예: 시간표 화면)에 진입하지 못했거나 화면이 하얗게 보인다면, 타겟 메뉴 ID(%s)로 바로 워프할 수 있는 아래의 jsCode를 강제 격발하여 순간 이동한다.
+                   jsCode: "if (window.nexacro && nexacro.getApplication()) { nexacro.getApplication().gfn_openMenu('%s'); }"
+                2. **조건 설정 (연도 및 학기):**
+                   - 시간표 화면이 로드된 상태에서, 이미지 상의 '학년도' 또는 '연도' 입력 란에 적힌 텍스트가 사용자의 타겟 연도(예: 2026년)와 일치하는지 시각적으로 검사한다. 일치하지 않는다면 해당 입력란 영역의 좌표를 CLICK하고, inputText에 "2026"을 세팅하여 TYPE 액션을 보낸다.
+                   - '학기' 선택 콤보박스에 표시된 텍스트가 사용자의 타겟 학기(예: 1학기)와 일치하는지 검사한다. 일치하지 않는다면 학기 콤보박스를 CLICK한 후, 콤보박스 드롭다운 목록에서 "1학기" 항목이 노출되면 해당 항목을 CLICK한다.
+                3. **스크롤 조작:**
+                   - 만약 설정해야 할 연도/학기 필드나 조회 버튼이 화면 하단에 있어 보이지 않는다면, action을 "DRAG"로 지정하고 드래그 시작 좌표(예: x=500, y=800)와 끝 좌표(예: x=500, y=200)를 반환하여 화면을 매끄럽게 아래로 쓸어 올린다.
+                4. **조회 격발:**
+                   - 연도와 학기 셋팅이 시각적으로 완벽히 일치하는 것으로 확인되면, 조회 버튼('조회', 'Search' 등)의 중심 좌표를 정확히 찾아 CLICK 액션을 보낸다.
+                5. **종결:**
+                   - 조회 버튼을 누른 후 화면의 시간표 그리드(표)에 데이터가 시각적으로 로드된 것이 확인되거나, 최종 결과물이 화면에 나타나면 jsCode를 "DIRECT_SSV_CRAWL"로 내보내거나 completed를 true로 반환하여 자율 주행을 영리하게 종결한다.
                 
                 [Output Constraint]
-                You must respond in JSON format ONLY, matching this schema:
+                반드시 아래의 JSON 포맷으로만 응답해야 하며, 그 외의 텍스트나 설명은 절대 포함해서는 안 된다:
                 {
-                  "jsCode": "string (the JavaScript snippet to execute on the WebView, or 'DIRECT_SSV_CRAWL')",
-                  "statusMessage": "string (explanatory progress message in Korean for the user, e.g., '성적 정보 탭을 활성화하는 중입니다...')",
-                  "completed": boolean (true if the task is done or direct scraping is triggered)
+                  "action": "string (CLICK, DRAG, TYPE, NONE)",
+                  "x": integer (0 ~ 1000 사이의 x 좌표, CLICK/TYPE/DRAG 시작 시 필요),
+                  "y": integer (0 ~ 1000 사이의 y 좌표, CLICK/TYPE/DRAG 시작 시 필요),
+                  "endX": integer (DRAG 액션 시 드래그가 끝날 x 좌표),
+                  "endY": integer (DRAG 액션 시 드래그가 끝날 y 좌표),
+                  "inputText": "string (TYPE 액션 시 입력할 텍스트)",
+                  "jsCode": "string (필요시 강제 메뉴 워프를 위한 JavaScript 코드, 없을 시 empty string)",
+                  "statusMessage": "string (현재 상태와 조작 의도를 한국어로 친절히 묘사, 예: '2026학년도를 설정하기 위해 연도 입력란을 터치합니다.')",
+                  "completed": boolean (모든 연동이 끝났거나 크롤링 단계로 전환할 때 true)
                 }
                 """.formatted(
-                        pathSummary.toString(),
-                        request.getMenuId(), 
+                        request.getMenuId(),
                         request.getMenuId(),
                         request.getPgmId(),
                         topMenuId,
                         request.getCurrentUrl(),
+                        request.getMenuId(),
                         request.getMenuId()
                 );
 

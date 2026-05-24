@@ -83,12 +83,22 @@ public class VllmClientService {
                     .defaultHeader("Authorization", "Bearer " + apiKey)
                     .build();
 
+            Object userContent;
+            if (request.getBase64Image() != null && !request.getBase64Image().isBlank()) {
+                userContent = List.of(
+                        Map.of("type", "text", "text", userMessage),
+                        Map.of("type", "image_url", "image_url", Map.of("url", "data:image/jpeg;base64," + request.getBase64Image().trim().replace("\n", "").replace("\r", "")))
+                );
+            } else {
+                userContent = userMessage;
+            }
+
             // vLLM / OpenAI Chat Completions 요청 페이로드 세팅
             Map<String, Object> requestBody = Map.of(
                     "model", modelName,
                     "messages", List.of(
                             Map.of("role", "system", "content", nexacroSpecificPrompt),
-                            Map.of("role", "user", "content", userMessage)
+                            Map.of("role", "user", "content", userContent)
                     ),
                     "temperature", 0.1,
                     "response_format", Map.of("type", "json_object")
