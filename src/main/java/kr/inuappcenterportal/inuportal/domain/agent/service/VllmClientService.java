@@ -59,16 +59,16 @@ public class VllmClientService {
                 "       \"completed\": true\n" +
                 "     }\n" +
                 "\n" +
-                "4. Active Frame Detection Completion Trigger:\n" +
-                "   - In the input 'Captured DOM Structure snippet' / HTML content, you will see it starts with 'ACTIVE_FRAME:[FrameName]||...'.\n" +
-                "   - If and ONLY if '[FrameName]' contains, starts with, or matches the exact targetMenuId '" + request.getMenuId() + "' (which indicates the target program screen is successfully loaded and active on the viewport),\n" +
+                "4. Opened Frames Detection Completion Trigger:\n" +
+                "   - In the input 'Captured DOM Structure snippet' / HTML content, you will see it starts with 'OPENED_FRAMES:[List of Opened Frames]||...'.\n" +
+                "   - If and ONLY if the '[List of Opened Frames]' contains or matches the exact targetMenuId '" + request.getMenuId() + "' (which indicates the target program screen is successfully loaded/rendered inside the Nexacro workspace),\n" +
                 "     you MUST immediately stop sending cellclick script and transition to the crawling phase by returning:\n" +
                 "     {\n" +
                 "       \"jsCode\": \"DIRECT_SSV_CRAWL\",\n" +
                 "       \"statusMessage\": \"넥사크로 세션 연동 완료! 데이터를 고속 추출합니다.\",\n" +
                 "       \"completed\": true\n" +
                 "     }\n" +
-                "     Do NOT run grd_leftMenu_oncellclick script again once ACTIVE_FRAME strictly matches targetMenuId '" + request.getMenuId() + "'! If '[FrameName]' is empty or is an unrelated screen frame name (such as topFrame, leftFrame, mainFrame, loginFrame etc.), you MUST continue executing the cellclick navigation script.";
+                "     Do NOT run grd_leftMenu_oncellclick script again once the targetMenuId '" + request.getMenuId() + "' is found in OPENED_FRAMES list! If it is not found, you MUST continue executing the cellclick navigation script.";
 
 
             // baseUrl의 끝에 /가 있는지 확인하고, uri 호출 시 상대경로를 사용하여 결합 오류 방지
