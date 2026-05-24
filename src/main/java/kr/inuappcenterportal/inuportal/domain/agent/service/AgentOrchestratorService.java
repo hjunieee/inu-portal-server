@@ -148,8 +148,8 @@ public class AgentOrchestratorService {
         String userMessage = String.format(
                 "Original User Intent: %s\nCaptured DOM Structure snippet: %s",
                 request.getUserPrompt(),
-                request.getHtmlContent() != null && request.getHtmlContent().length() > 2000 
-                        ? request.getHtmlContent().substring(0, 2000) // 컨텍스트 윈도우 보장용 자르기
+                request.getHtmlContent() != null && request.getHtmlContent().length() > 30000 
+                        ? request.getHtmlContent().substring(0, 30000) // 컨텍스트 윈도우 보장용 자르기
                         : request.getHtmlContent()
         );
 
