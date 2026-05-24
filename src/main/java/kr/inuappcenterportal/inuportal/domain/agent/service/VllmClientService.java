@@ -57,7 +57,18 @@ public class VllmClientService {
                 "       \"jsCode\": \"DIRECT_SSV_CRAWL\",\n" +
                 "       \"statusMessage\": \"넥사크로 세션 연동 완료! 데이터를 고속 추출합니다.\",\n" +
                 "       \"completed\": true\n" +
-                "     }";
+                "     }\n" +
+                "\n" +
+                "4. Active Frame Detection Completion Trigger:\n" +
+                "   - In the input 'Captured DOM Structure snippet' / HTML content, you will see it starts with 'ACTIVE_FRAME:[FrameName]||...'.\n" +
+                "   - If '[FrameName]' contains or matches targetMenuId '" + request.getMenuId() + "', or is NOT empty (meaning the target program screen is successfully loaded/focused on the screen),\n" +
+                "     you MUST immediately stop sending cellclick script and transition to the crawling phase by returning:\n" +
+                "     {\n" +
+                "       \"jsCode\": \"DIRECT_SSV_CRAWL\",\n" +
+                "       \"statusMessage\": \"넥사크로 세션 연동 완료! 데이터를 고속 추출합니다.\",\n" +
+                "       \"completed\": true\n" +
+                "     }\n" +
+                "     Do NOT run grd_leftMenu_oncellclick script again once ACTIVE_FRAME shows targetMenuId '" + request.getMenuId() + "'! This prevents infinite click loop.";
 
 
             // baseUrl의 끝에 /가 있는지 확인하고, uri 호출 시 상대경로를 사용하여 결합 오류 방지
