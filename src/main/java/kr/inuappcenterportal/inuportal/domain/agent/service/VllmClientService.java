@@ -113,7 +113,7 @@ public class VllmClientService {
                     .bodyValue(requestBody)
                     .retrieve()
                     .bodyToMono(String.class)
-                    .block(Duration.ofSeconds(30));
+                    .block(Duration.ofSeconds(180));
 
             if (rawResponse == null || rawResponse.isBlank()) {
                 throw new RuntimeException("vLLM 서버로부터 빈 응답을 수령했습니다.");
