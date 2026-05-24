@@ -43,16 +43,16 @@ public class VllmClientService {
                 "2. Direct Target Cell Click Navigation Strategy (HIGHLY RECOMMENDED):\n" +
                 "   - In Incheon National University ERP system, the left menu dataset 'DS_MENU' contains ALL submenu items under the activated Top Menu, even if their intermediate folders (e.g. '수업', '시간표관리') are COLLAPSED/CLOSED on the screen.\n" +
                 "   - Therefore, you do NOT need to expand or click intermediate folder menus one by one to make the target visible.\n" +
-                "   - As long as the Top-Level Menu (e.g. 학사행정 M000758) has been activated and 'DS_MENU' is loaded, you can directly trigger the target program screen by finding the row of targetMenuId and triggering 'grd_leftMenu_oncellclick' immediately.\n" +
+                "   - As long as the Top-Level Menu (e.g. 학사행정 M000758) has been activated and 'TARGET_MENU_IN_DS_MENU:true' is present, you can directly trigger the target program screen by finding the row of targetMenuId and triggering 'grd_leftMenu_oncellclick' immediately.\n" +
                 "   - This direct click loads the target program immediately without needing to open folders! ALWAYS use this direct target click as your primary action!\n" +
                 "   \n" +
                 "3. Operational Guidelines (Strict 3-Turn Navigation Sequence):\n" +
-                "   - Turn 1 (If Top-Level Menu is NOT active): Activate the Top Menu first by calling top menu click:\n" +
+                "   - Turn 1 (If Top-Level Menu is NOT active AND 'TARGET_MENU_IN_DS_MENU:false'): Activate the Top Menu first by calling top menu click:\n" +
                 "     \"application.gv_topFrame.form.mb_topMenu_onmenuclick(application.gv_topFrame.form.mb_topMenu, {id: '" + topMenuId + "', userdata: '" + topMenuId + "'});\"\n" +
-                "   - Turn 2 (Top Menu is already active, or you've clicked it in the previous turn): Directly call the 'grd_leftMenu_oncellclick' function on global 'application' object with the row index of target Menu ID '" + request.getMenuId() + "':\n" +
+                "   - Turn 2 (Top Menu is already active and 'TARGET_MENU_IN_DS_MENU:true', or you've clicked it in the previous turn): Directly call the 'grd_leftMenu_oncellclick' function on global 'application' object with the row index of target Menu ID '" + request.getMenuId() + "':\n" +
                 "     \"var ds = application.gv_leftFrame.form.DS_MENU; if (ds) { var row = ds.findRow('menuId', '" + request.getMenuId() + "'); if (row !== -1) { application.gv_leftFrame.form.grd_leftMenu_oncellclick(application.gv_leftFrame.form.grd_leftMenu, {row: row, cell: 0, clickitem: 'treeitem'}); } }\"\n" +
                 "     Do NOT attempt to use 'nexacro.getApplication()' or try to find and click parent folders like 'M001321' or 'M001147'. Just use the above direct row cell click one-liner.\n" +
-                "   - Turn 3 (Direct cell click executed): Immediately output the following DIRECT_SSV_CRAWL transition response:\n" +
+                "   - Turn 3 (Direct cell click executed and target frame is open): Immediately output the following DIRECT_SSV_CRAWL transition response:\n" +
                 "     {\n" +
                 "       \"jsCode\": \"DIRECT_SSV_CRAWL\",\n" +
                 "       \"statusMessage\": \"넥사크로 세션 연동 완료! 데이터를 고속 추출합니다.\",\n" +
@@ -60,15 +60,15 @@ public class VllmClientService {
                 "     }\n" +
                 "\n" +
                 "4. Opened Frames Detection Completion Trigger:\n" +
-                "   - In the input 'Captured DOM Structure snippet' / HTML content, you will see it starts with 'OPENED_FRAMES:[List of Opened Frames]||...'.\n" +
-                "   - If and ONLY if the '[List of Opened Frames]' contains or matches the exact targetMenuId '" + request.getMenuId() + "' (which indicates the target program screen is successfully loaded/rendered inside the Nexacro workspace),\n" +
+                "   - In the input 'Captured DOM Structure snippet' / HTML content, you will see it in this format: 'OPENED_FRAMES:[List of Opened Frames]||TARGET_MENU_IN_DS_MENU:[true/false]'.\n" +
+                "   - If and ONLY if the '[List of Opened Frames]' segment (before the '||') contains or matches the exact targetMenuId '" + request.getMenuId() + "' (which indicates the target program screen is successfully loaded/rendered inside the Nexacro workspace, e.g. Child_" + request.getMenuId() + "),\n" +
                 "     you MUST immediately stop sending cellclick script and transition to the crawling phase by returning:\n" +
                 "     {\n" +
                 "       \"jsCode\": \"DIRECT_SSV_CRAWL\",\n" +
                 "       \"statusMessage\": \"넥사크로 세션 연동 완료! 데이터를 고속 추출합니다.\",\n" +
                 "       \"completed\": true\n" +
                 "     }\n" +
-                "     Do NOT run grd_leftMenu_oncellclick script again once the targetMenuId '" + request.getMenuId() + "' is found in OPENED_FRAMES list! If it is not found, you MUST continue executing the cellclick navigation script.";
+                "     Do NOT run grd_leftMenu_oncellclick script again once the targetMenuId '" + request.getMenuId() + "' is found in the OPENED_FRAMES list segment (e.g. Child_" + request.getMenuId() + ")! If it is not found in that list, you MUST continue executing the cellclick navigation script.";
 
 
             // baseUrl의 끝에 /가 있는지 확인하고, uri 호출 시 상대경로를 사용하여 결합 오류 방지
