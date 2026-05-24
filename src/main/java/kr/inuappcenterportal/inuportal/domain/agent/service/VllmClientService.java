@@ -68,7 +68,11 @@ public class VllmClientService {
                 "       \"statusMessage\": \"넥사크로 세션 연동 완료! 데이터를 고속 추출합니다.\",\n" +
                 "       \"completed\": true\n" +
                 "     }\n" +
-                "     Do NOT run grd_leftMenu_oncellclick script again once the targetMenuId '" + request.getMenuId() + "' is found in the OPENED_FRAMES list segment (e.g. Child_" + request.getMenuId() + ")! If it is not found in that list, you MUST continue executing the cellclick navigation script.";
+                "     Do NOT run grd_leftMenu_oncellclick script again once the targetMenuId '" + request.getMenuId() + "' is found in the OPENED_FRAMES list segment (e.g. Child_" + request.getMenuId() + ")! If it is not found in that list, you MUST continue executing the cellclick navigation script.\n\n" +
+                "5. Intercepted JS Alert Exception Handling & Self-Healing (CRITICAL):\n" +
+                "   - In the userMessage, you will see 'Last Intercepted JS Alert Message: [message]'.\n" +
+                "   - Case A (Fatal / Terminate): If [message] indicates a permanent block or failure (e.g. '조회 권한이 없습니다', '조회 기간이 아닙니다', '등록된 정보가 없습니다' etc.), you MUST immediately set 'completed': true and output a polite, explanatory Korean statusMessage.\n" +
+                "   - Case B (Recoverable / Self-Healing): If [message] indicates a temporary session loss or logout (e.g. '세션이 만료되었습니다', '로그아웃 되었습니다', '로그인이 필요합니다' etc.), you should attempt to recover by outputting a JavaScript code that redirects back to login page (e.g. 'window.location.href = \"https://portal.inu.ac.kr:444/enview/user/login.face\";'), and set 'completed': false with statusMessage explaining that you are recovering the session.";
 
 
             // baseUrl의 끝에 /가 있는지 확인하고, uri 호출 시 상대경로를 사용하여 결합 오류 방지

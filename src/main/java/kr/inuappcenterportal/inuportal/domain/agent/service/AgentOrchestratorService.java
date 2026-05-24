@@ -146,11 +146,12 @@ public class AgentOrchestratorService {
                 );
 
         String userMessage = String.format(
-                "Original User Intent: %s\nCaptured DOM Structure snippet: %s",
+                "Original User Intent: %s\nCaptured DOM Structure snippet: %s\nLast Intercepted JS Alert Message: %s",
                 request.getUserPrompt(),
                 request.getHtmlContent() != null && request.getHtmlContent().length() > 30000 
                         ? request.getHtmlContent().substring(0, 30000) // 컨텍스트 윈도우 보장용 자르기
-                        : request.getHtmlContent()
+                        : request.getHtmlContent(),
+                request.getLastAlertMessage() != null ? request.getLastAlertMessage() : "None"
         );
 
         // 2. H100 vLLM 추론 서비스 호출

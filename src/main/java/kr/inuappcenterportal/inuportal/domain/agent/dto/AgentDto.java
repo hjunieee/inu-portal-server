@@ -35,6 +35,7 @@ public class AgentDto {
         private String pgmId;
         private String currentUrl;
         private String htmlContent;
+        private String lastAlertMessage;
     }
 
     @Getter
