@@ -40,19 +40,19 @@ public class VllmClientService {
             String nexacroSpecificPrompt = systemPrompt + "\n\n" +
                 "[IMPORTANT: ERP System Context]\n" +
                 "1. Framework: Nexacro 14 (Old version).\n" +
-                "2. Direct Function Call Navigation Strategy (HIGHLY RECOMMENDED):\n" +
-                "   - In Incheon National University ERP system, you do NOT need to expand or click intermediate menu folders manually on the left frame tree (e.g. grd_leftMenu_oncellclick on left frame is completely unnecessary).\n" +
-                "   - To open the target program screen, simply execute the global open menu function directly in your 'jsCode':\n" +
-                "     \"if (window.nexacro && nexacro.getApplication()) { nexacro.getApplication().gfn_openMenu('" + request.getMenuId() + "'); } else if (application) { application.gfn_openMenu('" + request.getMenuId() + "'); }\"\n" +
-                "   - This direct function call loads the target program immediately. ALWAYS use this direct function call as your primary action!\n" +
+                "2. Direct Target Cell Click Navigation Strategy (HIGHLY RECOMMENDED):\n" +
+                "   - In Incheon National University ERP system, the left menu dataset 'DS_MENU' contains ALL submenu items under the activated Top Menu, even if their intermediate folders (e.g. '수업', '시간표관리') are COLLAPSED/CLOSED on the screen.\n" +
+                "   - Therefore, you do NOT need to expand or click intermediate folder menus one by one to make the target visible.\n" +
+                "   - As long as the Top-Level Menu (e.g. 학사행정 M000758) has been activated and 'DS_MENU' is loaded, you can directly trigger the target program screen by finding the row of targetMenuId and triggering 'grd_leftMenu_oncellclick' immediately.\n" +
+                "   - This direct click loads the target program immediately without needing to open folders! ALWAYS use this direct target click as your primary action!\n" +
                 "   \n" +
                 "3. Operational Guidelines (Strict 3-Turn Navigation Sequence):\n" +
                 "   - Turn 1 (If Top-Level Menu is NOT active): Activate the Top Menu first by calling top menu click:\n" +
                 "     \"application.gv_topFrame.form.mb_topMenu_onmenuclick(application.gv_topFrame.form.mb_topMenu, {id: '" + topMenuId + "', userdata: '" + topMenuId + "'});\"\n" +
-                "   - Turn 2 (Top Menu is already active, or you've clicked it in the previous turn): Directly call the gfn_openMenu function with target Menu ID '" + request.getMenuId() + "' to immediately launch the screen:\n" +
-                "     \"if (window.nexacro && nexacro.getApplication()) { nexacro.getApplication().gfn_openMenu('" + request.getMenuId() + "'); } else if (application) { application.gfn_openMenu('" + request.getMenuId() + "'); }\"\n" +
-                "     Do NOT attempt to find or click left-side list tree rows like 'M001321' or 'M001147' anymore. Just use the above one-liner.\n" +
-                "   - Turn 3 (Direct function call executed): Immediately output the following DIRECT_SSV_CRAWL transition response:\n" +
+                "   - Turn 2 (Top Menu is already active, or you've clicked it in the previous turn): Directly call the 'grd_leftMenu_oncellclick' function on global 'application' object with the row index of target Menu ID '" + request.getMenuId() + "':\n" +
+                "     \"var ds = application.gv_leftFrame.form.DS_MENU; if (ds) { var row = ds.findRow('menuId', '" + request.getMenuId() + "'); if (row !== -1) { application.gv_leftFrame.form.grd_leftMenu_oncellclick(application.gv_leftFrame.form.grd_leftMenu, {row: row, cell: 0, clickitem: 'treeitem'}); } }\"\n" +
+                "     Do NOT attempt to use 'nexacro.getApplication()' or try to find and click parent folders like 'M001321' or 'M001147'. Just use the above direct row cell click one-liner.\n" +
+                "   - Turn 3 (Direct cell click executed): Immediately output the following DIRECT_SSV_CRAWL transition response:\n" +
                 "     {\n" +
                 "       \"jsCode\": \"DIRECT_SSV_CRAWL\",\n" +
                 "       \"statusMessage\": \"넥사크로 세션 연동 완료! 데이터를 고속 추출합니다.\",\n" +
