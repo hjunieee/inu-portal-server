@@ -107,12 +107,12 @@ public class AgentOrchestratorService {
                 - 메뉴 트리 내비게이션 경로: %s
                 
                 [화면 좌표 기준]
-                - 이 이미지는 원래 가로가 긴 웹 화면을 비율 왜곡 없이(Aspect Ratio 보존) 가로세로 비율이 1:1이 되도록 더 긴 변을 기준으로 하얀색 여백을 덧붙여(Letterbox padded) 만든 **1:1 비율의 완벽한 정사각형(Square) 이미지**다.
+                - 이 이미지는 원래 웹 화면의 가로세로 비율(Aspect Ratio)을 100%% 온전히 유지한 채 비례 축소된 이미지다. (여백이나 패딩이 없는 실제 화면 전체)
                 - 화면의 좌측 상단을 (0, 0), 우측 하단을 (1000, 1000)으로 정의하는 0~1000 범위의 정규화 좌표계를 사용한다.
+                  * x 좌표는 가로축 기준 0~1000 백분율 상대값이다 (0 = 맨 왼쪽, 1000 = 맨 오른쪽).
+                  * y 좌표는 세로축 기준 0~1000 백분율 상대값이다 (0 = 맨 위쪽, 1000 = 맨 아래쪽).
                 - **[CRITICAL AXIS RULE - NEVER CONFUSE X AND Y]**
-                  * x 좌표는 '가로(Horizontal)'축의 위치다 (0 = 맨 왼쪽, 1000 = 맨 오른쪽).
-                  * y 좌표는 '세로(Vertical)'축의 위치다 (0 = 맨 위쪽, 1000 = 맨 아래쪽).
-                  * 축이 반전(Axis Inversion)되지 않도록 캡처 이미지 상에서 가로(x)와 세로(y)가 절대 뒤바뀌지 않게 철저히 확인하라!
+                  * 축이 반전(Axis Inversion)되지 않도록 가로(x)와 세로(y)가 뒤바뀌지 않게 철저히 확인하라!
                 - 반드시 캡처 화면 상에서 실제로 보여지는 실물 UI 요소(글씨, 입력 박스, 버튼 등)의 정확한 시각적 중심점을 눈으로 짚어 해당 좌표를 제공해야 한다. 절대로 보지 않고 임의로 좌표를 추정하지 말라.
                 
                 [비전 기반 자율 주행 가이드라인]
@@ -143,8 +143,22 @@ public class AgentOrchestratorService {
                   "inputText": "string (TYPE 액션 시 입력할 텍스트)",
                   "targetText": "string (조작 대상 엘리먼트의 눈에 보이는 정확한 한글/영문 텍스트 이름, 예: '학사행정', '수업', '조회'. 없으면 empty string)",
                   "jsCode": "string (조회 완료 및 크롤링 전환 시 'DIRECT_SSV_CRAWL' 입력, 평소엔 empty string)",
-                  "statusMessage": "string (현재 상태와 조작 의도를 한국어로 친절히 묘사, 예: '수업 메뉴를 열기 위해 수업 텍스트 영역을 터치합니다.')",
-                  "completed": boolean (그리드에 최종 시간표 데이터가 시각적으로 로드 완료되었을 때만 true)
+                  "statusMessage": "string (현재 상태와 조작 의도를 한국어로 친절히 묘사)",
+                  "completed": boolean (그리드에 최종 데이터가 시각적으로 로드 완료되었을 때만 true)
+                }
+                
+                [Example Output Format]
+                {
+                  "action": "CLICK",
+                  "x": 125,
+                  "y": 450,
+                  "endX": 0,
+                  "endY": 0,
+                  "inputText": "",
+                  "targetText": "수업",
+                  "jsCode": "",
+                  "statusMessage": "수업 메뉴를 클릭하여 서브메뉴를 엽니다.",
+                  "completed": false
                 }
                 """.formatted(
                         menuPath.isEmpty() ? request.getMenuId() : menuPath.get(menuPath.size() - 1).getMenuNm(),
