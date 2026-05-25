@@ -27,7 +27,7 @@ public class VllmClientService {
     @Value("${vllm.api.key}")
     private String apiKey;
 
-    @Value("${vllm.model.name:Qwen/Qwen2.5-Coder-32B-Instruct-AWQ}")
+    @Value("${vllm.model.name:Qwen/Qwen2.5-VL-72B-Instruct-AWQ}")
     private String modelName;
 
     /**
@@ -55,11 +55,13 @@ public class VllmClientService {
 
             Object userContent;
             if (request.getBase64Image() != null && !request.getBase64Image().isBlank()) {
+                log.info("vLLM 비전 이미지 적재 성공 - Base64 크기: {} bytes", request.getBase64Image().length());
                 userContent = List.of(
                         Map.of("type", "text", "text", userMessage),
                         Map.of("type", "image_url", "image_url", Map.of("url", "data:image/jpeg;base64," + request.getBase64Image().trim().replace("\n", "").replace("\r", "")))
                 );
             } else {
+                log.warn("🚨 [경고] vLLM 요청에 비전 이미지가 누락되었습니다! 이미지 없는 순수 텍스트 모드로 동작하여 헛조준이 일어날 수 있습니다.");
                 userContent = userMessage;
             }
 
