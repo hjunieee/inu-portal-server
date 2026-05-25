@@ -55,5 +55,6 @@ public class AgentDto {
         private Integer endX;       // 드래그 시 끝 x 좌표 (0 ~ 1000)
         private Integer endY;       // 드래그 시 끝 y 좌표 (0 ~ 1000)
         private String inputText;   // 텍스트 입력 시 기입할 글자
+        private String targetText;  // 추가: 자석 스냅핑을 위한 타겟 엘리먼트 텍스트
     }
 }
