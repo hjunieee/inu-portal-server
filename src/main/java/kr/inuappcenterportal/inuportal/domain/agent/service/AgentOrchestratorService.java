@@ -47,16 +47,13 @@ public class AgentOrchestratorService {
             PortalMenuMap targetMenu = matchedMenus.get(0);
             log.info("RAG 메뉴 매칭 성공 (프로그램 전용): {} (ID: {})", targetMenu.getMenuNm(), targetMenu.getMenuId());
 
-            // 넥사크로 14 전용 메뉴 강제 이동 스크립트 빌드 (Track A)
-            String initJs = String.format("if (window.nexacro && nexacro.getApplication()) { nexacro.getApplication().gfn_openMenu('%s'); }", targetMenu.getMenuId());
-
             return AgentDto.StartResponse.builder()
                     .success(true)
                     .menuId(targetMenu.getMenuId())
                     .pgmId(targetMenu.getPgmId())
                     .menuName(targetMenu.getMenuNm())
-                    .initJsCode(initJs)
-                    .statusMessage(String.format("인천대 포털 RAG 지도를 대입하여 '%s' 화면으로 실시간 연동을 시작합니다.", targetMenu.getMenuNm()))
+                    .initJsCode("") // 순수 시각 자율 탐색: 순간이동 JS 100% 소거
+                    .statusMessage(String.format("인천대 포털 RAG 단서를 획득했습니다. 목적지인 '%s'를 향해 시각 자율 탐색을 개시합니다.", targetMenu.getMenuNm()))
                     .build();
         }
 
@@ -102,32 +99,32 @@ public class AgentOrchestratorService {
 
         // 1. Qwen 2.5 Coder용 정교한 넥사크로 전문 시스템 프롬프트 엔지니어링 수행
         String systemPrompt = """
-                너는 인천대학교 포털 및 ERP 화면 이미지를 직접 보고 분석하여 자율 조작을 완성하는 시각적 지능(Visual Agent Brain)이다.
-                사용자의 최종 조회 목표(예: 2026년 1학기 시간표 조회)에 도달하기 위해, 현재 캡처 이미지 상에서 필요한 요소를 찾아 좌표 (x, y)와 action을 반환해야 한다.
+                너는 인천대학교 포털 및 ERP 화면 이미지를 직접 보고 분석하여 자율 조작을 완성하는 시각적 지능(Visual Agent Brain)이자 내비게이터다.
+                사용자의 최종 조회 목표(예: 시간표 조회, 성적 조회 등)에 도달하기 위해, 현재 캡처 이미지 상에서 필요한 요소를 찾아 좌표 (x, y)와 action을 반환해야 한다.
+                
+                [목적지 찾아가기용 RAG 이정표 단서 (RAG Navigation Clues)]
+                - 최종 목적지 메뉴명: %s
+                - 메뉴 트리 내비게이션 경로: %s
                 
                 [화면 좌표 기준]
                 - 화면의 좌측 상단을 (0, 0), 우측 하단을 (1000, 1000)으로 정의하는 0~1000 범위의 정규화 좌표계를 사용한다.
-                - 반드시 사용자가 볼 수 있는 실물 UI 요소의 정확한 중심점을 짚어야 한다.
-
-                [Context Info]
-                - Target Page Name: %s
-                - Target Menu ID: %s
-                - Target Program ID: %s
-                - Target Top-Level Menu ID: %s
-                - Current Browser URL: %s
+                - 반드시 사용자가 볼 수 있는 실물 UI 요소(글씨, 입력 박스, 버튼 등)의 정확한 중심점을 짚어야 한다.
                 
                 [비전 기반 자율 주행 가이드라인]
-                1. **초기 진입:** 아직 타겟 프로그램 화면(예: 시간표 화면)에 진입하지 못했거나 화면이 하얗게 보인다면, 타겟 메뉴 ID(%s)로 바로 워프할 수 있는 아래의 jsCode를 강제 격발하여 순간 이동한다.
-                   jsCode: "if (window.nexacro && nexacro.getApplication()) { nexacro.getApplication().gfn_openMenu('%s'); }"
+                1. **메뉴 내비게이션 탐색 (순수 비전 클릭):**
+                   - 현재 화면 이미지 상에서 위 RAG 이정표 경로에 해당하는 메뉴 글씨들을 순차적으로 찾아 터치(CLICK)해야 한다.
+                   - 예를 들어, 아직 포털 메인 화면이고 넥사크로 트리도 활성화되지 않았다면, 먼저 포털 홈의 '학사행정' 탭 메뉴(탭 글씨 영역)를 찾아 클릭한다.
+                   - '학사행정'이 활성화되어 좌측 트리 메뉴판이 뜨면, 이정표 경로상 다음 순서인 '수업' ➔ '시간표관리' 폴더 순서로 글씨 영역의 중심을 이미지 상에서 찾아 정밀하게 클릭해 열어 나간다.
+                   - 최종 타겟인 '학생별시간표' 글씨가 이미지 상에 노출되면 해당 글씨 영역을 정확하게 클릭해 최종 시간표 화면으로 접속한다.
                 2. **조건 설정 (연도 및 학기):**
-                   - 시간표 화면이 로드된 상태에서, 이미지 상의 '학년도' 또는 '연도' 입력 란에 적힌 텍스트가 사용자의 타겟 연도(예: 2026년)와 일치하는지 시각적으로 검사한다. 일치하지 않는다면 해당 입력란 영역의 좌표를 CLICK하고, inputText에 "2026"을 세팅하여 TYPE 액션을 보낸다.
-                   - '학기' 선택 콤보박스에 표시된 텍스트가 사용자의 타겟 학기(예: 1학기)와 일치하는지 검사한다. 일치하지 않는다면 학기 콤보박스를 CLICK한 후, 콤보박스 드롭다운 목록에서 "1학기" 항목이 노출되면 해당 항목을 CLICK한다.
+                   - 시간표 화면이 완전히 로드되어 이미지 상에 노출되면, 사용자의 타겟 연도(예: 2026년)와 '학년도' 입력란에 쓰인 글씨를 비전으로 확인한다. 다르면 해당 입력란 중심을 CLICK하고, inputText에 "2026"을 채워 TYPE 액션을 쏜다.
+                   - '학기' 선택 콤보박스의 텍스트가 타겟 학기(예: 1학기)와 다르면 콤보박스를 CLICK한 후 드롭다운 목록이 렌더링되면 "1학기" 글씨 영역을 정확히 CLICK한다.
                 3. **스크롤 조작:**
-                   - 만약 설정해야 할 연도/학기 필드나 조회 버튼이 화면 하단에 있어 보이지 않는다면, action을 "DRAG"로 지정하고 드래그 시작 좌표(예: x=500, y=800)와 끝 좌표(예: x=500, y=200)를 반환하여 화면을 매끄럽게 아래로 쓸어 올린다.
-                4. **조회 격발:**
-                   - 연도와 학기 셋팅이 시각적으로 완벽히 일치하는 것으로 확인되면, 조회 버튼('조회', 'Search' 등)의 중심 좌표를 정확히 찾아 CLICK 액션을 보낸다.
-                5. **종결:**
-                   - 조회 버튼을 누른 후 화면의 시간표 그리드(표)에 데이터가 시각적으로 로드된 것이 확인되거나, 최종 결과물이 화면에 나타나면 jsCode를 "DIRECT_SSV_CRAWL"로 내보내거나 completed를 true로 반환하여 자율 주행을 영리하게 종결한다.
+                   - 화면 하단부에 있어 클릭해야 할 요소가 뷰포트 바깥에 숨겨진 경우, action을 "DRAG"로 지정하고 드래그 시작 좌표(예: 500, 800)와 끝 좌표(예: 500, 200)를 주어 화면을 매끄럽게 아래로 당겨 쓸어 올린다.
+                4. **최종 조회 격발:**
+                   - 연도와 학기 설정이 이미지 상으로 완벽하게 완료된 것이 확인되면, 화면에 위치한 '조회' 또는 'Search' 버튼의 영역을 시각적으로 찾아 CLICK 액션을 보낸다.
+                5. **유연한 자율 종결:**
+                   - 최종 조회를 클릭하여 시간표 그리드(표)에 사용자의 시간표 텍스트들이 시각적으로 정상 렌더링되어 로딩된 것이 눈으로 확실히 판별되면, `jsCode`를 "DIRECT_SSV_CRAWL"로 뱉고 `completed`를 true로 반환하여 연동을 영리하게 완결 짓는다.
                 
                 [Output Constraint]
                 반드시 아래의 JSON 포맷으로만 응답해야 하며, 그 외의 텍스트나 설명은 절대 포함해서는 안 된다:
@@ -138,18 +135,13 @@ public class AgentOrchestratorService {
                   "endX": integer (DRAG 액션 시 드래그가 끝날 x 좌표),
                   "endY": integer (DRAG 액션 시 드래그가 끝날 y 좌표),
                   "inputText": "string (TYPE 액션 시 입력할 텍스트)",
-                  "jsCode": "string (필요시 강제 메뉴 워프를 위한 JavaScript 코드, 없을 시 empty string)",
-                  "statusMessage": "string (현재 상태와 조작 의도를 한국어로 친절히 묘사, 예: '2026학년도를 설정하기 위해 연도 입력란을 터치합니다.')",
-                  "completed": boolean (모든 연동이 끝났거나 크롤링 단계로 전환할 때 true)
+                  "jsCode": "string (조회 완료 및 크롤링 전환 시 'DIRECT_SSV_CRAWL' 입력, 평소엔 empty string)",
+                  "statusMessage": "string (현재 상태와 조작 의도를 한국어로 친절히 묘사, 예: '수업 메뉴를 열기 위해 수업 텍스트 영역을 터치합니다.')",
+                  "completed": boolean (그리드에 최종 시간표 데이터가 시각적으로 로드 완료되었을 때만 true)
                 }
                 """.formatted(
-                        request.getMenuId(),
-                        request.getMenuId(),
-                        request.getPgmId(),
-                        topMenuId,
-                        request.getCurrentUrl(),
-                        request.getMenuId(),
-                        request.getMenuId()
+                        menuPath.isEmpty() ? request.getMenuId() : menuPath.get(menuPath.size() - 1).getMenuNm(),
+                        pathSummary.toString()
                 );
 
         String userMessage = String.format(

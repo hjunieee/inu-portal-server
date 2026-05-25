@@ -38,41 +38,11 @@ public class VllmClientService {
         try {
             // Nexacro 14 ERP 특화 지침 추가 (AI가 시스템 구조를 오해하지 않도록 보강)
             String nexacroSpecificPrompt = systemPrompt + "\n\n" +
-                "[IMPORTANT: ERP System Context]\n" +
-                "1. Framework: Nexacro 14 (Old version).\n" +
-                "2. Direct Target Cell Click Navigation Strategy (HIGHLY RECOMMENDED):\n" +
-                "   - In Incheon National University ERP system, the left menu dataset 'DS_MENU' contains ALL submenu items under the activated Top Menu, even if their intermediate folders (e.g. '수업', '시간표관리') are COLLAPSED/CLOSED on the screen.\n" +
-                "   - Therefore, you do NOT need to expand or click intermediate folder menus one by one to make the target visible.\n" +
-                "   - As long as the Top-Level Menu (e.g. 학사행정 M000758) has been activated and 'TARGET_MENU_IN_DS_MENU:true' is present, you can directly trigger the target program screen by finding the row of targetMenuId and triggering 'grd_leftMenu_oncellclick' immediately.\n" +
-                "   - This direct click loads the target program immediately without needing to open folders! ALWAYS use this direct target click as your primary action!\n" +
-                "   \n" +
-                "3. Operational Guidelines (Strict 3-Turn Navigation Sequence):\n" +
-                "   - Turn 1 (If Top-Level Menu is NOT active AND 'TARGET_MENU_IN_DS_MENU:false'): Activate the Top Menu first by calling top menu click:\n" +
-                "     \"application.gv_topFrame.form.mb_topMenu_onmenuclick(application.gv_topFrame.form.mb_topMenu, {id: '" + topMenuId + "', userdata: '" + topMenuId + "'});\"\n" +
-                "   - Turn 2 (Top Menu is already active and 'TARGET_MENU_IN_DS_MENU:true', or you've clicked it in the previous turn): Directly call the 'grd_leftMenu_oncellclick' function on global 'application' object with the row index of target Menu ID '" + request.getMenuId() + "':\n" +
-                "     \"var ds = application.gv_leftFrame.form.DS_MENU; if (ds) { var row = ds.findRow('menuId', '" + request.getMenuId() + "'); if (row !== -1) { application.gv_leftFrame.form.grd_leftMenu_oncellclick(application.gv_leftFrame.form.grd_leftMenu, {row: row, cell: 0, clickitem: 'treeitem'}); } }\"\n" +
-                "     Do NOT attempt to use 'nexacro.getApplication()' or try to find and click parent folders like 'M001321' or 'M001147'. Just use the above direct row cell click one-liner.\n" +
-                "   - Turn 3 (Direct cell click executed and target frame is open): Immediately output the following DIRECT_SSV_CRAWL transition response:\n" +
-                "     {\n" +
-                "       \"jsCode\": \"DIRECT_SSV_CRAWL\",\n" +
-                "       \"statusMessage\": \"넥사크로 세션 연동 완료! 데이터를 고속 추출합니다.\",\n" +
-                "       \"completed\": true\n" +
-                "     }\n" +
-                "\n" +
-                "4. Opened Frames Detection Completion Trigger:\n" +
-                "   - In the input 'Captured DOM Structure snippet' / HTML content, you will see it in this format: 'OPENED_FRAMES:[List of Opened Frames]||TARGET_MENU_IN_DS_MENU:[true/false]'.\n" +
-                "   - If and ONLY if the '[List of Opened Frames]' segment (before the '||') contains or matches the exact targetMenuId '" + request.getMenuId() + "' (which indicates the target program screen is successfully loaded/rendered inside the Nexacro workspace, e.g. Child_" + request.getMenuId() + "),\n" +
-                "     you MUST immediately stop sending cellclick script and transition to the crawling phase by returning:\n" +
-                "     {\n" +
-                "       \"jsCode\": \"DIRECT_SSV_CRAWL\",\n" +
-                "       \"statusMessage\": \"넥사크로 세션 연동 완료! 데이터를 고속 추출합니다.\",\n" +
-                "       \"completed\": true\n" +
-                "     }\n" +
-                "     Do NOT run grd_leftMenu_oncellclick script again once the targetMenuId '" + request.getMenuId() + "' is found in the OPENED_FRAMES list segment (e.g. Child_" + request.getMenuId() + ")! If it is not found in that list, you MUST continue executing the cellclick navigation script.\n\n" +
-                "5. Intercepted JS Alert Exception Handling & Self-Healing (CRITICAL):\n" +
-                "   - In the userMessage, you will see 'Last Intercepted JS Alert Message: [message]'.\n" +
-                "   - Case A (Fatal / Terminate): If [message] indicates a permanent block or failure (e.g. '조회 권한이 없습니다', '조회 기간이 아닙니다', '등록된 정보가 없습니다' etc.), you MUST immediately set 'completed': true and output a polite, explanatory Korean statusMessage.\n" +
-                "   - Case B (Recoverable / Self-Healing): If [message] indicates a temporary session loss or logout (e.g. '세션이 만료되었습니다', '로그아웃 되었습니다', '로그인이 필요합니다' etc.), you should attempt to recover by outputting a JavaScript code that redirects back to login page (e.g. 'window.location.href = \"https://portal.inu.ac.kr:444/enview/user/login.face\";'), and set 'completed': false with statusMessage explaining that you are recovering the session.";
+                "[IMPORTANT: Intercepted Alert Exception Handling & Self-Healing]\n" +
+                "1. If 'Last Intercepted JS Alert Message' in the user message indicates a permanent block or failure (e.g. '조회 권한이 없습니다', '조회 기간이 아닙니다', '등록된 정보가 없습니다' 등),\n" +
+                "   you MUST immediately set 'completed': true and output a polite, explanatory Korean statusMessage.\n" +
+                "2. If it indicates a session timeout or logout (e.g. '세션이 만료되었습니다', '로그아웃 되었습니다', '로그인이 필요합니다' 등),\n" +
+                "   attempt to recover the session by returning: jsCode: 'window.location.href = \"https://portal.inu.ac.kr:444/enview/user/login.face\";' and completed: false.";
 
 
             // baseUrl의 끝에 /가 있는지 확인하고, uri 호출 시 상대경로를 사용하여 결합 오류 방지
